@@ -19,7 +19,7 @@ dependencies = [
     "onnx>=1.17.0",
     "onnxruntime-gpu==1.23.0 ; sys_platform == 'win32' or sys_platform == 'linux'",
     "onnxruntime ; sys_platform == 'darwin'",
-    "optitrack ; python_full_version == '3.8.*' and sys_platform == 'win32'",
+    "optitrack==0.0.9 ; sys_platform == 'win32'",
     "pandas>=2.3.3",
     "pillow==10.3.0",
     "psutil==6.0.0",
