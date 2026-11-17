@@ -255,24 +255,33 @@ def PolarisCoord(tracker_connection: "TrackerConnection", tracker_id: int, ref_m
     trck = tracker_connection.GetConnection()
     trck.Run()
 
-    probe = trck.probe.decode(const.FS_ENCODE).split(",")
-    angles_probe = np.degrees(tr.euler_from_quaternion(probe[2:6], axes="rzyx"))
-    trans_probe = np.array(probe[6:9]).astype(float)
-    coord1 = np.hstack((trans_probe, angles_probe))
+    def _parse_marker(raw):
+        """Parse one tracker marker ('...,quat_w,quat_x,quat_y,quat_z,tx,ty,tz').
 
-    ref = trck.ref.decode(const.FS_ENCODE).split(",")
-    angles_ref = np.degrees(tr.euler_from_quaternion(ref[2:6], axes="rzyx"))
-    trans_ref = np.array(ref[6:9]).astype(float)
-    coord2 = np.hstack((trans_ref, angles_ref))
+        Returns zero coordinates when the marker is missing or malformed
+        (e.g. 'MISSING' during a dropout) instead of raising -- an exception
+        here would otherwise crash the tracker-reading thread.
+        """
+        try:
+            parts = raw.decode(const.FS_ENCODE).split(",")
+            if len(parts) < 9 or "MISSING" in parts:
+                return np.hstack(([0, 0, 0], [0, 0, 0]))
+            q = [float(p) for p in parts[2:6]]
+            t = [float(p) for p in parts[6:9]]
+            angles = np.degrees(tr.euler_from_quaternion(q, axes="rzyx"))
+            trans = np.array(t).astype(float)
+            return np.hstack((trans, angles))
+        except (ValueError, TypeError, AttributeError):
+            return np.hstack(([0, 0, 0], [0, 0, 0]))
+
+    coord1 = _parse_marker(trck.probe)
+    coord2 = _parse_marker(trck.ref)
 
     n_coils = getattr(tracker_connection, "n_coils", 1)
 
     obj_coords = []
     for i in range(min(n_coils, trck.objs.size())):
-        obj = trck.objs[i].decode(const.FS_ENCODE).split(",")
-        angles_obj = np.degrees(tr.euler_from_quaternion(obj[2:6], axes="rzyx"))
-        trans_obj = np.array(obj[6:9]).astype(float)
-        obj_coords.append(np.hstack((trans_obj, angles_obj)))
+        obj_coords.append(_parse_marker(trck.objs[i]))
 
     coord = np.vstack([coord1, coord2, *obj_coords])
     marker_visibilities = [trck.probeID, trck.refID] + list(trck.objIDs)[:n_coils]
@@ -798,9 +807,25 @@ class ReceiveCoordinates(threading.Thread):
         self.sleep_coord = data
 
     def run(self) -> None:
+        error_count = 0
         while not self.event.is_set():
-            coord_raw, marker_visibilities = GetCoordinatesForThread(
-                self.tracker_connection, self.tracker_id, const.DEFAULT_REF_MODE
-            )
-            self.TrackerCoordinates.SetCoordinates(coord_raw, marker_visibilities)
+            try:
+                coord_raw, marker_visibilities = GetCoordinatesForThread(
+                    self.tracker_connection, self.tracker_id, const.DEFAULT_REF_MODE
+                )
+                self.TrackerCoordinates.SetCoordinates(coord_raw, marker_visibilities)
+                if error_count:
+                    # recovering after a tracker hiccup: log once and reset
+                    print(f"[i] Tracker reading recovered after {error_count} errors.")
+                    error_count = 0
+            except Exception as e:
+                # A tracker error (malformed frame, camera unplugged, parsing
+                # failure) must not silently kill this thread: navigation would
+                # look alive while acting on stale coordinates. Log and retry;
+                # after several consecutive failures, suggest a reconnect.
+                error_count += 1
+                if error_count == 1 or error_count % 100 == 0:
+                    print(f"[E] Tracker reading failed ({error_count}x): {e}")
+                    if error_count >= 100:
+                        print("[E] Tracker keeps failing -- try reconnecting the tracker in Options > Preferences > Tracker.")
             sleep(self.sleep_coord)
