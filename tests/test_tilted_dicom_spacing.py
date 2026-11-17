@@ -1,18 +1,10 @@
 import math
-import sys
 from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
 from pydicom.dataset import FileDataset, FileMetaDataset
 from pydicom.uid import ExplicitVRLittleEndian, MRImageStorage, generate_uid
-
-# Allow running tests in environments where invesalius_rs has not been compiled
-if "invesalius_rs._native" not in sys.modules:
-    try:
-        from invesalius_rs import _native  # noqa: F401
-    except (ImportError, ModuleNotFoundError):
-        sys.modules["invesalius_rs._native"] = MagicMock()
 
 from invesalius.reader import dicom_reader
 from invesalius.reader.dicom_grouper import DicomGroup
@@ -22,7 +14,6 @@ def _create_mock_slice(position, orientation_label="AXIAL", patient_orientation=
     mock_dicom = MagicMock()
     mock_dicom.image.position = list(position)
     mock_dicom.image.orientation_label = orientation_label
-    mock_dicom.image.patient_orientation = patient_orientation
     mock_dicom.acquisition.patient_orientation = patient_orientation
     mock_dicom.image.number = number
     mock_dicom.image.type = ["ORIGINAL", "PRIMARY"]

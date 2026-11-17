@@ -171,8 +171,6 @@ class DicomGroup:
                 if pos is None:
                     return 0.0
                 iop = getattr(d.acquisition, "patient_orientation", None) if hasattr(d, "acquisition") else None
-                if not iop:
-                    iop = getattr(d.image, "patient_orientation", None) if hasattr(d, "image") else None
                 if iop and len(iop) == 6:
                     rx, ry, rz = iop[:3]
                     cx, cy, cz = iop[3:]
