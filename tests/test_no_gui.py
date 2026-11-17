@@ -37,3 +37,18 @@ def test_export_surface_without_wx_app(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
     assert path.exists()
     assert path.stat().st_size > 0
+
+
+def test_create_new_mask_without_wx_app() -> None:
+    code = (
+        "import numpy as np\n"
+        "import wx\n"
+        "from invesalius.data.slice_ import Slice\n"
+        "assert wx.GetApp() is None\n"
+        "slc = Slice()\n"
+        "slc.matrix = np.arange(125, dtype=np.int16).reshape((5, 5, 5))\n"
+        "slc.spacing = (1.0, 1.0, 1.0)\n"
+        "slc.create_new_mask(name='Mask 1', threshold_range=(0, 100))\n"
+    )
+    result = run_code(code)
+    assert result.returncode == 0, result.stderr
