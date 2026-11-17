@@ -1,4 +1,5 @@
 import numpy as np
+from invesalius.data.mask import Mask
 from invesalius.data.slice_ import Slice
 from invesalius.project import Project
 from unittest.mock import patch
@@ -63,3 +64,20 @@ def test_set_mask_name() -> None:
     slc.SetMaskName(mask_index, new_name)
     proj: Project = Project()
     assert proj.mask_dict[mask_index].name == new_name
+
+def test_recreate_mask_opened_from_file(tmp_path) -> None:
+    slc: Slice = Slice()
+    with patch("numpy.histogram", return_value=(np.array([0]), np.array([0, 1]))):
+        slc.matrix = np.ones((5, 5, 5), dtype=np.int16)
+    slc.spacing = (1.0, 1.0, 1.0)
+    mask = slc.create_new_mask(name="SavedMask", add_to_project=False, show=False)
+    mask_file: str = str(tmp_path / "mask.dat")
+    mask._save_mask(mask_file)
+
+    opened_mask = Mask()
+    opened_mask._open_mask(mask_file, mask.matrix.shape)
+    new_shape: tuple[int, int, int] = (4, 7, 6)
+    opened_mask._recreate_mask_matrix(new_shape)
+
+    assert opened_mask.matrix.shape == new_shape
+    assert opened_mask.temp_file != mask_file
