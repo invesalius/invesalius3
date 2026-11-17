@@ -7513,8 +7513,19 @@ class SetCOMPort(wx.Dialog):
 
         if sys.platform.startswith("win"):
             ports = [comport.device for comport in serial.tools.list_ports.comports()]
+        elif sys.platform.startswith("linux"):
+            # Linux: list the real serial devices instead of raising; when none
+            # is found, fall back to the historically used force-sensor port
+            # (overridable via the FORCE_SENSOR_PORT environment variable).
+            ports = sorted(
+                comport.device for comport in serial.tools.list_ports.comports()
+            )
+            if not ports:
+                ports = [os.getenv("FORCE_SENSOR_PORT", "/dev/ttyUSB0")]
         else:
-            raise OSError("Unsupported platform")
+            raise NotImplementedError(
+                "Serial port listing is only implemented for Windows and Linux"
+            )
         return ports
 
     def _init_gui(self) -> None:
