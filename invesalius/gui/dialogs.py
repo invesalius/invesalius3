@@ -8044,13 +8044,18 @@ class ProjectLoadProgressDialog:
     """Progress dialog for loading .inv3 project files with cancellation support."""
 
     def __init__(self, parent: Optional[wx.Window] = None):
-        if parent is None:
-            parent = wx.GetApp().GetTopWindow()
-
         self.title = _("Loading Project")
         self.msg = _("Preparing to load project...")
         self.style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME | wx.PD_AUTO_HIDE
         self.cancelled = False
+
+        # Without a wx.App (e.g. --no-gui) there is no dialog to show.
+        if wx.GetApp() is None:
+            self.dlg = None
+            return
+
+        if parent is None:
+            parent = wx.GetApp().GetTopWindow()
 
         self.dlg = wx.ProgressDialog(
             self.title, self.msg, maximum=100, parent=parent, style=self.style
@@ -8072,6 +8077,9 @@ class ProjectLoadProgressDialog:
         """
         if self.cancelled:
             return False
+
+        if self.dlg is None:
+            return True
 
         try:
             if message:

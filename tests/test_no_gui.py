@@ -37,3 +37,17 @@ def test_export_surface_without_wx_app(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
     assert path.exists()
     assert path.stat().st_size > 0
+
+
+def test_project_load_progress_dialog_without_wx_app() -> None:
+    code = (
+        "import wx\n"
+        "from invesalius.gui.dialogs import ProjectLoadProgressDialog\n"
+        "assert wx.GetApp() is None\n"
+        "dlg = ProjectLoadProgressDialog()\n"
+        "assert dlg.Update(50, 'Loading project...')\n"
+        "assert not dlg.WasCancelled()\n"
+        "dlg.Close()\n"
+    )
+    result = run_code(code)
+    assert result.returncode == 0, result.stderr
