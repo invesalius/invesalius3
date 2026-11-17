@@ -214,6 +214,20 @@ class Marker:
         )
         return res
 
+    def to_world(self):
+        """Return the marker position and orientation in world (SimNIBS) space."""
+        if self.alpha is not None and self.beta is not None and self.gamma is not None:
+            position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+                position=[self.x, self.y, self.z],
+                orientation=[self.alpha, self.beta, self.gamma],
+            )
+        else:
+            position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(
+                position=[self.x, self.y, self.z],
+                orientation=[0, 0, 0],
+            )
+        return position_world, orientation_world
+
     def to_brain_targets_dict(self):
         if self.alpha is not None and self.beta is not None and self.gamma is not None:
             position_world, orientation_world = imagedata_utils.convert_invesalius_to_world(

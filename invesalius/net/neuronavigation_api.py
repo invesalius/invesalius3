@@ -74,6 +74,15 @@ class NeuronavigationApi(metaclass=Singleton):
         Publisher.subscribe(self.stop_navigation, "Stop navigation")
         Publisher.subscribe(self.update_target_mode, "Set target mode")
         Publisher.subscribe(self.update_coil_at_target, "Coil at target")
+        # External controller (attached via --remote-host): stimulation pulses
+        # received from it create markers.
+        import invesalius.session as ses
+
+        if ses.Session().GetConfig("external_controller"):
+            Publisher.subscribe(
+                self.stimulation_pulse_received_from_external_controller,
+                "Create marker upon stimulation",
+            )
         # Publisher.subscribe(self.update_tracker_poses, "From Neuronavigation: Update tracker poses")
         Publisher.subscribe(self.update_target_orientation, "Update target orientation")
         # Publisher.subscribe(self.connect_to_robot, "Neuronavigation to Robot: Connect to robot")
@@ -117,6 +126,14 @@ class NeuronavigationApi(metaclass=Singleton):
             self.connection.update_neuronavigation_started(
                 started=False,
             )
+
+    def stimulation_pulse_received_from_external_controller(self, targets, mep=None):
+        """Handle stimulation pulses reported by an external controller.
+
+        Forwards to stimulation_pulse_received; mep is optional because
+        external controllers may not report MEP values.
+        """
+        self.stimulation_pulse_received(targets, mep)
 
     def update_target_mode(self, enabled):
         if self.connection is not None:

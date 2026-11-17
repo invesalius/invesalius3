@@ -3270,6 +3270,15 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self.GetRotationPosition, "Send coil position and rotation")
         Publisher.subscribe(self.CreateMarkerEfield, "Create Marker from tangential")
         Publisher.subscribe(self.UpdateCortexMarker, "Update Cortex Marker")
+
+        # External controller (e.g. an experiment pipeline) attached via
+        # --remote-host: accept marker-creation requests from it.
+        _ext = ses.Session().GetConfig("external_controller")
+        if _ext:
+            Publisher.subscribe(
+                self.CreateMarkerFromExternalController,
+                "External Controller to Neuronavigation: Create Marker",
+            )
         Publisher.subscribe(
             self.UpdateCoilTarget, "NeuroSimo to Neuronavigation: Update coil target"
         )
@@ -4731,6 +4740,69 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def GetNextMarkerLabel(self):
         return self.markers.GetNextMarkerLabel()
 
+    def CreateMarkerFromExternalController(
+        self, position, orientation, marker_type=None, label=None, is_target=False
+    ):
+        """
+        Create a marker from a pose given in world (SimNIBS) space.
+
+        Called when an external controller (attached via --remote-host) sends
+        an 'External Controller to Neuronavigation: Create Marker' message.
+        The message payload arrives unpacked as keyword arguments (the relay
+        client injects it into the pubsub system). Converts the pose to
+        InVesalius space and hands it over to the regular marker-creation
+        flow.
+        """
+        position, orientation = self.__convert_world_to_invesalius(
+            position, orientation
+        )
+        if position is None:
+            print("[W] External controller: no affine matrix -- cannot convert pose.", flush=True)
+            return
+        Publisher.sendMessage(
+            "Create marker",
+            position=position.tolist(),
+            orientation=orientation.tolist(),
+            marker_type=MarkerType(marker_type),
+            label=label,
+            is_target=is_target,
+        )
+
+    def __convert_world_to_invesalius(self, position, orientation):
+        """
+        Convert a position and orientation from SimNIBS space to InVesalius
+        space (the inverse of convert_invesalius_to_world in
+        imagedata_utils.py). Euler angles use the 'sxyz' convention.
+
+        Returns (position, orientation), or (None, None) when no project with
+        an affine matrix is open.
+        """
+        slice = slice_.Slice()
+        if slice.affine is None or slice.matrix is None:
+            # No project with a registered image is open yet.
+            return None, None
+
+        M_world = dco.coordinates_to_transformation_matrix(
+            position=position,
+            orientation=orientation,
+            axes="sxyz",
+        )
+        # slice.affine defines the transform between SimNIBS coordinates and
+        # the tracker space of InVesalius.
+        M_invesalius = slice.affine @ M_world
+        position_voxel, orientation_invesalius = dco.transformation_matrix_to_coordinates(
+            M_invesalius, axes="sxyz"
+        )
+        # Flip the y-axis.
+        position_invesalius = np.array(
+            (
+                position_voxel[0],
+                slice.spacing[1] * (slice.matrix.shape[1] - 1) - position_voxel[1],
+                position_voxel[2],
+            )
+        )
+        return position_invesalius, orientation_invesalius
+
     def OnCreateMarker(
         self,
         evt=None,
@@ -4796,6 +4868,19 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             mep_value=mep_value,
         )
         self.markers.AddMarker(marker, render=True, focus=True)
+
+        # Report the realized marker pose (world space) to the external
+        # controller, if one is attached.
+        if ses.Session().GetConfig("external_controller"):
+            world_pos, world_ori = marker.to_world()
+            wx.CallAfter(
+                Publisher.sendMessage,
+                "From Neuronavigation: Coil target created",
+                markers=[
+                    [np.float64(i) for i in world_pos],
+                    [np.float64(i) for i in world_ori],
+                ],
+            )
 
     # Given a string, try to parse it as an integer, float, or string.
     #
