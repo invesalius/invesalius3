@@ -784,7 +784,7 @@ class Controller:
             self.CreateDicomProject(dicom, matrix, matrix_filename)
         else:
             # OPTION 2: NIfTI, Analyze or PAR/REC
-            basename = os.path.basename(directory)
+            basename = os.path.basename(directory.replace("\\", "/"))
             lower_basename = basename.lower()
             if lower_basename.endswith(".nii.gz"):
                 filetype = "nii.gz"

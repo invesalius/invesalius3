@@ -458,6 +458,13 @@ def use_cmd_optargs(args):
         import_dir = args.dicom_dir
         Publisher.sendMessage("Import directory", directory=import_dir, use_gui=not args.no_gui)
 
+        session = ses.Session()
+        if not session.IsOpen():
+            print(f"Failed to import medical images from '{import_dir}'.")
+            if args.no_gui:
+                sys.exit(1)
+            return False
+
         if args.save:
             Publisher.sendMessage("Save project", filepath=os.path.abspath(args.save))
             exit(0)
@@ -469,6 +476,13 @@ def use_cmd_optargs(args):
 
     elif args.import_folder:
         Publisher.sendMessage("Import folder", folder=args.import_folder)
+        session = ses.Session()
+        if not session.IsOpen():
+            print(f"Failed to import folder from '{args.import_folder}'.")
+            if args.no_gui:
+                sys.exit(1)
+            return False
+
         if args.save:
             Publisher.sendMessage("Save project", filepath=os.path.abspath(args.save))
             exit(0)
@@ -479,6 +493,13 @@ def use_cmd_optargs(args):
 
     elif args.other_file:
         Publisher.sendMessage("Open other files", filepath=args.other_file)
+        session = ses.Session()
+        if not session.IsOpen():
+            print(f"Failed to open file from '{args.other_file}'.")
+            if args.no_gui:
+                sys.exit(1)
+            return False
+
         if args.save:
             Publisher.sendMessage("Save project", filepath=os.path.abspath(args.save))
             exit(0)
@@ -556,6 +577,17 @@ def add_suffix(filename, suffix):
 
 def check_for_export(args, suffix="", remove_surfaces=False):
     suffix = sanitize(suffix)
+
+    if args.export or args.export_to_all or args.export_project:
+        import invesalius.data.slice_ as slc
+
+        session = ses.Session()
+        s = slc.Slice()
+        if s.matrix is None or not session.IsOpen():
+            print("Export cancelled: no medical image or project loaded.")
+            if args.no_gui:
+                sys.exit(1)
+            return
 
     if args.export:
         if not args.threshold:
