@@ -1229,18 +1229,17 @@ class SpinInteractorStyle(DefaultInteractorStyle):
         ren = iren.FindPokedRenderer(mouse_x, mouse_y)
         cam = ren.GetActiveCamera()
         if self.left_pressed:
-            self.viewer.UpdateTextDirection(cam)
             obj.Spin()
+            self.viewer.UpdateTextDirection(cam)
             obj.OnRightButtonDown()
 
     def OnUnspin(self, evt):
-        orig_orien = 1
         iren = self.viewer.interactor
         mouse_x, mouse_y = iren.GetLastEventPosition()
         ren = iren.FindPokedRenderer(mouse_x, mouse_y)
         cam = ren.GetActiveCamera()
-        cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.viewer.orientation])
-        self.viewer.ResetTextDirection(cam)
+        cam.SetRoll(self.viewer.default_roll)
+        self.viewer.UpdateTextDirection(cam)
         iren.Render()
 
 
