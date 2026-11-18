@@ -701,7 +701,7 @@ class DicomPreviewSlice(wx.Panel):
         self._display_previews()
 
     def OnWheel(self, evt):
-        d = evt.GetWheelDelta() // evt.GetWheelRotation()
+        d = evt.GetWheelRotation() // evt.GetWheelDelta()
         self.scroll.SetThumbPosition(self.scroll.GetThumbPosition() - d)
         self.OnScroll()
 
