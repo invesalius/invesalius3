@@ -23,6 +23,13 @@ def test_acquisition_time_without_fraction():
     assert parser.GetAcquisitionTime() == "14:35:12"
 
 
+def test_acquisition_time_truncated():
+    # DICOM TM also allows HH and HHMM
+    assert make_parser(0x0032, "14").GetAcquisitionTime() == "14:00:00"
+    assert make_parser(0x0032, "1435").GetAcquisitionTime() == "14:35:00"
+    assert make_parser(0x0032, "1435.5").GetAcquisitionTime() == "14:35:00"
+
+
 def test_acquisition_date_formats():
     assert make_parser(0x0022, "20200315").GetAcquisitionDate() == "15/03/2020"
     assert make_parser(0x0022, "2020.03.15").GetAcquisitionDate() == "15/03/2020"
