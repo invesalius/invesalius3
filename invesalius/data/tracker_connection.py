@@ -143,6 +143,15 @@ class OptitrackTrackerConnection(TrackerConnection):
         self.coil_names = []
         self.coil_count = None
 
+        if sys.platform == "win32":
+            from ctypes import byref, c_int, windll
+
+            # Motive's Qt runtime can change process DPI awareness and shrink the GUI.
+            # Set the existing mode explicitly before loading the SDK to preserve it.
+            dpi_awareness = c_int()
+            if windll.shcore.GetProcessDpiAwareness(None, byref(dpi_awareness)) == 0:
+                windll.shcore.SetProcessDpiAwareness(dpi_awareness)
+
         import optitrack
 
         connection = optitrack.optr()
