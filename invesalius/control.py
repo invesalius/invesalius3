@@ -262,7 +262,7 @@ class Controller:
         if filepath:
             Publisher.sendMessage("Import Nifti mask", filepath=filepath)
 
-    def OnImportMaskNifti(self, filepath: "str | bytes") -> None:
+    def OnImportMaskNifti(self, filepath: "str | bytes", mask_name: str = "") -> None:
         try:
             if isinstance(filepath, bytes):
                 filepath = filepath.decode("utf-8")
@@ -293,7 +293,7 @@ class Controller:
             # Match InVesalius internal (axial) coordinate layout (ZYX flipped)
             mask_data = np.ascontiguousarray(np.fliplr(np.swapaxes(mask_data, 0, 2)))
 
-            name = os.path.splitext(os.path.basename(filepath))[0]
+            name = mask_name if mask_name else os.path.splitext(os.path.basename(filepath))[0]
             # Label-map threshold: strict 0-255 range for binary mask
             thresh = (0, 255)
             colour = const.MASK_COLOUR[len(prj.Project().mask_dict) % len(const.MASK_COLOUR)]
