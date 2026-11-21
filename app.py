@@ -583,7 +583,9 @@ def add_suffix(filename, suffix):
 def check_for_export(args, suffix="", remove_surfaces=False):
     suffix = sanitize(suffix)
 
-    if args.export or args.export_to_all or args.export_project:
+    # --export-project is not checked here: Project.export_project raises a
+    # ValueError when there is no image data, which is handled below.
+    if args.export or args.export_to_all:
         if not project_loaded():
             print("Export cancelled: no medical image or project loaded.")
             if args.no_gui:

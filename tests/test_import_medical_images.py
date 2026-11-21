@@ -150,3 +150,28 @@ def test_export_project_to_hdf5_without_matrix():
         pytest.raises(ValueError, match="No image data to export"),
     ):
         prj.export_project_to_hdf5("test.hdf5")
+
+
+def test_check_for_export_project_without_image_data(tmp_path, capsys):
+    """--export-project with no image data should exit with an error and write no file."""
+    import argparse
+    from types import SimpleNamespace
+
+    from app import check_for_export
+
+    args = argparse.Namespace(
+        export=None,
+        export_to_all=None,
+        export_project=str(tmp_path / "out.hdf5"),
+        save_masks=False,
+    )
+
+    with (
+        patch("invesalius.data.slice_.Slice", return_value=SimpleNamespace(matrix=None)),
+        pytest.raises(SystemExit) as exc_info,
+    ):
+        check_for_export(args)
+
+    assert exc_info.value.code == 1
+    assert "No image data to export" in capsys.readouterr().out
+    assert list(tmp_path.iterdir()) == []
