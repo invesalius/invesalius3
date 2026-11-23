@@ -4753,9 +4753,9 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         InVesalius space and hands it over to the regular marker-creation
         flow.
         """
-        position, orientation = self.__convert_world_to_invesalius(
-            position, orientation
-        )
+        from invesalius.data import imagedata_utils
+
+        position, orientation = imagedata_utils.convert_world_to_invesalius(position, orientation)
         if position is None:
             print("[W] External controller: no affine matrix -- cannot convert pose.", flush=True)
             return
@@ -4767,41 +4767,6 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             label=label,
             is_target=is_target,
         )
-
-    def __convert_world_to_invesalius(self, position, orientation):
-        """
-        Convert a position and orientation from SimNIBS space to InVesalius
-        space (the inverse of convert_invesalius_to_world in
-        imagedata_utils.py). Euler angles use the 'sxyz' convention.
-
-        Returns (position, orientation), or (None, None) when no project with
-        an affine matrix is open.
-        """
-        slice = slice_.Slice()
-        if slice.affine is None or slice.matrix is None:
-            # No project with a registered image is open yet.
-            return None, None
-
-        M_world = dco.coordinates_to_transformation_matrix(
-            position=position,
-            orientation=orientation,
-            axes="sxyz",
-        )
-        # slice.affine defines the transform between SimNIBS coordinates and
-        # the tracker space of InVesalius.
-        M_invesalius = slice.affine @ M_world
-        position_voxel, orientation_invesalius = dco.transformation_matrix_to_coordinates(
-            M_invesalius, axes="sxyz"
-        )
-        # Flip the y-axis.
-        position_invesalius = np.array(
-            (
-                position_voxel[0],
-                slice.spacing[1] * (slice.matrix.shape[1] - 1) - position_voxel[1],
-                position_voxel[2],
-            )
-        )
-        return position_invesalius, orientation_invesalius
 
     def OnCreateMarker(
         self,
