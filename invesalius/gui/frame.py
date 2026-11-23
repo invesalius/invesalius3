@@ -1979,6 +1979,8 @@ class StatusBar(wx.StatusBar):
         Set text progress label.
         """
         self.SetStatusText(label, 0)
+        # Paint the status before a blocking operation without dispatching other events.
+        self.Update()
 
     def _SetImageInfo(self, info):
         """
