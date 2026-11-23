@@ -25,7 +25,16 @@ import re
 import shutil
 import sys
 import traceback
-
+import logging
+logging.basicConfig(
+    filename="app.log",
+    encoding="utf-8",
+    filemode="a",
+    format="{asctime} - {levelname} - {message}",
+    style="{",
+    datefmt="%Y-%m-%d %H:%M",
+)
+logging.warning("Remain calm")
 if sys.platform == "darwin":
     try:
         import certifi
@@ -39,6 +48,7 @@ if sys.platform == "win32":
         import winreg
     except ImportError:
         import _winreg as winreg
+        logging.error("System Platform error", exc_info=True)
 #  else:
 #  if sys.platform != 'darwin':
 #  import wxversion
@@ -78,7 +88,10 @@ if session.ReadConfig():
         try:
             LANG = lang
         except FileNotFoundError:
+            logging.error("File Not Found error", exc_info=True)
             pass
+            
+            
 
 
 class InVesalius(wx.App):
@@ -166,6 +179,7 @@ class Inv3SplashScreen(SplashScreen):
                 ok = dialog.ShowModal() == wx.ID_OK
             except wx.PyAssertionError:
                 ok = True
+                logging.error("Assertion Error", exc_info=True)
             finally:
                 if ok:
                     lang = dialog.GetSelectedLanguage()
