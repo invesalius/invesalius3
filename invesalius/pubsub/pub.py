@@ -64,7 +64,8 @@ def subscribe(listener: UserListener, topicName: str, **curriedArgs) -> Tuple[Li
 
 def unsubscribe(*args, **kwargs) -> None:
     """Unsubscribe from a topic."""
-    Publisher.unsubscribe(*args, **kwargs)
+    if args and args[0] is not None: 
+        Publisher.unsubscribe(*args, **kwargs)
 
 
 def unsubscribe_owner(owner: object) -> List[Listener]:
