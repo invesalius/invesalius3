@@ -827,5 +827,7 @@ class ReceiveCoordinates(threading.Thread):
                 if error_count == 1 or error_count % 100 == 0:
                     print(f"[E] Tracker reading failed ({error_count}x): {e}")
                     if error_count >= 100:
-                        print("[E] Tracker keeps failing -- try reconnecting the tracker in Options > Preferences > Tracker.")
+                        print(
+                            "[E] Tracker keeps failing -- try reconnecting the tracker in Options > Preferences > Tracker."
+                        )
             sleep(self.sleep_coord)
