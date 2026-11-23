@@ -248,10 +248,12 @@ class MarkersControl(metaclass=Singleton):
         """
         current_labels = [m.label for m in self.list]
         label = "New marker"
-        i = 1
-        while label in current_labels:
-            i += 1
-            label = "New marker " + str(i)
+        if label in current_labels:
+            i = 1
+            label = f"New marker {i}"
+            while label in current_labels:
+                i += 1
+                label = "New marker " + str(i)
 
         return label
 
