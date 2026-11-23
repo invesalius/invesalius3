@@ -673,6 +673,41 @@ def convert_invesalius_to_world(position, orientation):
     return position_world, orientation_world
 
 
+def convert_world_to_invesalius(position, orientation):
+    """
+    Convert position and orientation from world space to InVesalius space.
+
+    This is the inverse of convert_invesalius_to_world. Euler angles use the
+    'sxyz' convention. Returns (None, None) when no project with an affine
+    matrix is open.
+
+    :param position: a vector of 3 coordinates in the world space.
+    :param orientation: a vector of 3 Euler angles in the world space.
+    :return: a pair consisting of 3 coordinates and 3 Euler angles in the
+             InVesalius space, or (None, None) if the affine matrix is not
+             defined in the project.
+    """
+    slice = sl.Slice()
+
+    if slice.affine is None or slice.matrix is None:
+        return None, None
+
+    M_world = dco.coordinates_to_transformation_matrix(
+        position=position,
+        orientation=orientation,
+        axes="sxyz",
+    )
+    M_invesalius = slice.affine @ M_world
+    position_voxel, orientation_invesalius = dco.transformation_matrix_to_coordinates(
+        M_invesalius,
+        axes="sxyz",
+    )
+
+    # convert_invesalius_to_voxel is a y-axis flip and is self-inverse.
+    position_invesalius = convert_invesalius_to_voxel(position_voxel)
+    return position_invesalius, orientation_invesalius
+
+
 def create_grid(xy_range, z_range, z_offset, spacing):
     x = np.arange(xy_range[0], xy_range[1] + 1, spacing)
     y = np.arange(xy_range[0], xy_range[1] + 1, spacing)

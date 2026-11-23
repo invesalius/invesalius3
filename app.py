@@ -670,6 +670,11 @@ def load_neuronavigation(args, connection, remote_host):
     session = ses.Session()
     session.SetConfig("debug", args.debug)
     session.SetConfig("debug_efield", args.debug_efield)
+    # Record whether an external controller (e.g. an experiment pipeline) is
+    # attached via --remote-host. Topic handlers for it are registered only
+    # then (see task_navigator / preferences / neuronavigation_api). Always
+    # written so a stale value from a previous run cannot linger.
+    session.SetConfig("external_controller", remote_host or args.remote_host or "")
 
     if args.debug:
         Publisher.subscribe(print_events, Publisher.ALL_TOPICS)

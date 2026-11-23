@@ -2031,6 +2031,12 @@ class RobotSetupPanel(wx.Panel):
         Publisher.subscribe(
             self.OnSetRobotTransformationMatrix, "Robot transformation matrix seted"
         )
+        # External controller (attached via --remote-host): allow it to
+        # trigger the robot reconnection routine.
+        import invesalius.session as ses
+
+        if ses.Session().GetConfig("external_controller"):
+            Publisher.subscribe(self.OnRobotConnect, "Robot Recovery: Restart Robot Connection")
 
     def HideParent(self):  # hide preferences dialog box
         self.GetGrandParent().GetGrandParent().Hide()
@@ -2119,7 +2125,7 @@ class RobotSetupPanel(wx.Panel):
 
             confirm_dlg.Destroy()
 
-    def OnRobotConnect(self, evt):
+    def OnRobotConnect(self, evt=None):
         robot_ip = self.robot.robot_ip
         if robot_ip is not None and self.verifyFormatIP(robot_ip):
             self.status_text.SetLabelText(_("Trying to connect to robot..."))

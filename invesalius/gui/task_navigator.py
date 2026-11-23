@@ -3270,6 +3270,15 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
         Publisher.subscribe(self.GetRotationPosition, "Send coil position and rotation")
         Publisher.subscribe(self.CreateMarkerEfield, "Create Marker from tangential")
         Publisher.subscribe(self.UpdateCortexMarker, "Update Cortex Marker")
+
+        # External controller (e.g. an experiment pipeline) attached via
+        # --remote-host: accept marker-creation requests from it.
+        _ext = ses.Session().GetConfig("external_controller")
+        if _ext:
+            Publisher.subscribe(
+                self.CreateMarkerFromExternalController,
+                "External Controller to Neuronavigation: Create Marker",
+            )
         Publisher.subscribe(
             self.UpdateCoilTarget, "NeuroSimo to Neuronavigation: Update coil target"
         )
@@ -4731,6 +4740,34 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
     def GetNextMarkerLabel(self):
         return self.markers.GetNextMarkerLabel()
 
+    def CreateMarkerFromExternalController(
+        self, position, orientation, marker_type=None, label=None, is_target=False
+    ):
+        """
+        Create a marker from a pose given in world (SimNIBS) space.
+
+        Called when an external controller (attached via --remote-host) sends
+        an 'External Controller to Neuronavigation: Create Marker' message.
+        The message payload arrives unpacked as keyword arguments (the relay
+        client injects it into the pubsub system). Converts the pose to
+        InVesalius space and hands it over to the regular marker-creation
+        flow.
+        """
+        from invesalius.data import imagedata_utils
+
+        position, orientation = imagedata_utils.convert_world_to_invesalius(position, orientation)
+        if position is None:
+            print("[W] External controller: no affine matrix -- cannot convert pose.", flush=True)
+            return
+        Publisher.sendMessage(
+            "Create marker",
+            position=position.tolist(),
+            orientation=orientation.tolist(),
+            marker_type=MarkerType(marker_type),
+            label=label,
+            is_target=is_target,
+        )
+
     def OnCreateMarker(
         self,
         evt=None,
@@ -4796,6 +4833,19 @@ class MarkersPanel(wx.Panel, ColumnSorterMixin):
             mep_value=mep_value,
         )
         self.markers.AddMarker(marker, render=True, focus=True)
+
+        # Report the realized marker pose (world space) to the external
+        # controller, if one is attached.
+        if ses.Session().GetConfig("external_controller"):
+            world_pos, world_ori = marker.to_world()
+            wx.CallAfter(
+                Publisher.sendMessage,
+                "From Neuronavigation: Coil target created",
+                markers=[
+                    [np.float64(i) for i in world_pos],
+                    [np.float64(i) for i in world_ori],
+                ],
+            )
 
     # Given a string, try to parse it as an integer, float, or string.
     #
