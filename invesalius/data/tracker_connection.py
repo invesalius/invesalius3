@@ -112,6 +112,12 @@ class OptitrackTrackerConnection(TrackerConnection):
         self.coil_names = []
         self.coil_count = None
 
+    def SetConfiguration(self, configuration):
+        configuration = dict(configuration)
+        # A restored selection must never open a dialog, including legacy state.
+        configuration.setdefault("coil_names", [])
+        return super().SetConfiguration(configuration)
+
     def Configure(self):
         dialog = dlg.ConfigureOptitrackDialog()
 
@@ -137,6 +143,15 @@ class OptitrackTrackerConnection(TrackerConnection):
         self.coil_names = []
         self.coil_count = None
 
+        if sys.platform == "win32":
+            from ctypes import byref, c_int, windll
+
+            # Motive's Qt runtime can change process DPI awareness and shrink the GUI.
+            # Set the existing mode explicitly before loading the SDK to preserve it.
+            dpi_awareness = c_int()
+            if windll.shcore.GetProcessDpiAwareness(None, byref(dpi_awareness)) == 0:
+                windll.shcore.SetProcessDpiAwareness(dpi_awareness)
+
         import optitrack
 
         connection = optitrack.optr()
@@ -157,6 +172,7 @@ class OptitrackTrackerConnection(TrackerConnection):
                 return
 
             connection.Run()  # Runs 'Run' function once to update cameras.
+            self.configuration["coil_names"] = list(self.coil_names)
             lib_mode = "wrapper"
 
             self.connection = connection
@@ -167,7 +183,30 @@ class OptitrackTrackerConnection(TrackerConnection):
         self.lib_mode = lib_mode
 
     def ValidateCoilCount(self) -> bool:
-        """Require enough coils and let the user choose when there are extra coils."""
+        """Validate a restored selection or select coils for a new configuration."""
+        if self.n_coils == 1:
+            if self.coil_names.count("Coil") == 1:
+                self.coil_names = ["Coil"]
+                return True
+            print("The Optitrack profile must contain a coil named exactly 'Coil'.")
+            self.lib_mode = "coil selection required"
+            return False
+
+        if "coil_names" in self.configuration:
+            saved_names = self.configuration["coil_names"]
+            if (
+                self.coil_count >= self.n_coils
+                and isinstance(saved_names, list)
+                and len(saved_names) == self.n_coils
+                and all(isinstance(name, str) and name in self.coil_names for name in saved_names)
+                and len(set(saved_names)) == len(saved_names)
+            ):
+                self.coil_names = list(saved_names)
+                return True
+
+            self.lib_mode = "coil selection required"
+            return False
+
         if self.coil_count < self.n_coils:
             self.lib_mode = "coil count mismatch"
             return False

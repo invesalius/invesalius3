@@ -1116,7 +1116,7 @@ def ShowNavigationTrackerWarning(
     """
     Spatial Tracker connection error
     """
-    if lib_mode == "cancelled":
+    if lib_mode in ("cancelled", "coil selection required"):
         return
 
     trck = {

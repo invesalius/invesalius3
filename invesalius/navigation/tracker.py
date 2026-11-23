@@ -126,6 +126,7 @@ class Tracker(metaclass=Singleton):
                 return
 
             # Connect to tracker.
+            Publisher.sendMessage("Update status text in GUI", label=_("Configuring tracker ..."))
 
             # XXX: Unfortunately, PolhemusTracker forms a special case here, as configuring
             #   it happens with a different workflow than the other trackers. (See
@@ -160,6 +161,7 @@ class Tracker(metaclass=Singleton):
                     self.thread_coord.start()
 
             self.SaveState()
+            Publisher.sendMessage("Update status text in GUI", label=_("Ready"))
 
     def DisconnectTracker(self) -> None:
         if self.tracker_connected:
