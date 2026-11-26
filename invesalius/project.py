@@ -725,6 +725,9 @@ class Project(metaclass=Singleton):
         import invesalius.data.slice_ as slc
 
         s = slc.Slice()
+        if s.matrix is None:
+            raise ValueError("No image data to export.")
+
         with h5py.File(filename, "w") as f:
             f["image"] = s.matrix
             f["spacing"] = s.spacing
@@ -759,6 +762,9 @@ class Project(metaclass=Singleton):
         import invesalius.data.slice_ as slc
 
         s = slc.Slice()
+        if s.matrix is None:
+            raise ValueError("No image data to export.")
+
         img_nifti = nib.Nifti1Image(np.swapaxes(np.fliplr(s.matrix), 0, 2), None)
         img_nifti.header.set_zooms(s.spacing)
         img_nifti.header.set_dim_info(slice=0)

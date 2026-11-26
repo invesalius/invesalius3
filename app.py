@@ -452,11 +452,25 @@ def parse_command_line():
     return args
 
 
+def project_loaded():
+    # The session status alone is not enough: it is persisted in the config
+    # file and can be stale after a crash, so also check that image data exists.
+    import invesalius.data.slice_ as slc
+
+    return ses.Session().IsOpen() and slc.Slice().matrix is not None
+
+
 def use_cmd_optargs(args):
     # If import DICOM argument...
     if args.dicom_dir:
         import_dir = args.dicom_dir
         Publisher.sendMessage("Import directory", directory=import_dir, use_gui=not args.no_gui)
+
+        if not project_loaded():
+            print(f"Failed to import medical images from '{import_dir}'.")
+            if args.no_gui:
+                sys.exit(1)
+            return False
 
         if args.save:
             Publisher.sendMessage("Save project", filepath=os.path.abspath(args.save))
@@ -469,6 +483,12 @@ def use_cmd_optargs(args):
 
     elif args.import_folder:
         Publisher.sendMessage("Import folder", folder=args.import_folder)
+        if not project_loaded():
+            print(f"Failed to import folder from '{args.import_folder}'.")
+            if args.no_gui:
+                sys.exit(1)
+            return False
+
         if args.save:
             Publisher.sendMessage("Save project", filepath=os.path.abspath(args.save))
             exit(0)
@@ -479,6 +499,12 @@ def use_cmd_optargs(args):
 
     elif args.other_file:
         Publisher.sendMessage("Open other files", filepath=args.other_file)
+        if not project_loaded():
+            print(f"Failed to open file from '{args.other_file}'.")
+            if args.no_gui:
+                sys.exit(1)
+            return False
+
         if args.save:
             Publisher.sendMessage("Save project", filepath=os.path.abspath(args.save))
             exit(0)
@@ -556,6 +582,15 @@ def add_suffix(filename, suffix):
 
 def check_for_export(args, suffix="", remove_surfaces=False):
     suffix = sanitize(suffix)
+
+    # --export-project is not checked here: Project.export_project raises a
+    # ValueError when there is no image data, which is handled below.
+    if args.export or args.export_to_all:
+        if not project_loaded():
+            print("Export cancelled: no medical image or project loaded.")
+            if args.no_gui:
+                sys.exit(1)
+            return
 
     if args.export:
         if not args.threshold:
