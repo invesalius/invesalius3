@@ -418,7 +418,7 @@ def parse_command_line():
     parser.add_argument("-s", "--save", help="Save the project after an import.")
 
     parser.add_argument(
-        "-t", "--threshold", help="Define the threshold for the export (e.g. 100-780)."
+        "-t", "--threshold", help="Define the threshold for the export (e.g. 100,780)."
     )
 
     parser.add_argument("-e", "--export", help="Export to STL.")
@@ -557,11 +557,14 @@ def add_suffix(filename, suffix):
 def check_for_export(args, suffix="", remove_surfaces=False):
     suffix = sanitize(suffix)
 
+    threshold_range = None
+    if args.threshold:
+        threshold_range = tuple([int(n) for n in args.threshold.split(",")])
+
     if args.export:
-        if not args.threshold:
+        if not threshold_range:
             print("Need option --threshold when using --export.")
             exit(1)
-        threshold_range = tuple([int(n) for n in args.threshold.split(",")])
 
         if suffix:
             if args.export.endswith(".stl"):
@@ -588,6 +591,9 @@ def check_for_export(args, suffix="", remove_surfaces=False):
 
     if args.export_project:
         from invesalius.project import Project
+
+        if threshold_range:
+            Publisher.sendMessage("Set threshold values", threshold_range=threshold_range)
 
         prj = Project()
         export_filename = args.export_project

@@ -20,7 +20,11 @@ with patch.object(Session, "ReadConfig", return_value=False):
 
 def make_args(export_project: str) -> argparse.Namespace:
     return argparse.Namespace(
-        export=None, export_to_all=None, export_project=export_project, save_masks=False
+        export=None,
+        export_to_all=None,
+        export_project=export_project,
+        save_masks=False,
+        threshold=None,
     )
 
 
