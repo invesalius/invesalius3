@@ -693,7 +693,12 @@ class Controller:
         self.SaveProject(filepath)
 
     def SaveProject(self, path: Optional["str | Path"] = None, compress: bool = False) -> None:
-        dialog.ProgressBarHandler(self.frame, "Saving Project", "Initializing...", max_value=100)
+        # Without a wx.App (e.g. --no-gui) the progress dialog would fail.
+        use_gui = wx.GetApp() is not None
+        if use_gui:
+            dialog.ProgressBarHandler(
+                self.frame, "Saving Project", "Initializing...", max_value=100
+            )
 
         try:
             session = ses.Session()
@@ -738,7 +743,10 @@ class Controller:
             )
 
         except Exception as e:
-            wx.MessageBox(f"Error: {e}", "Error", wx.OK | wx.ICON_ERROR)
+            if use_gui:
+                wx.MessageBox(f"Error: {e}", "Error", wx.OK | wx.ICON_ERROR)
+            else:
+                print(f"Error: {e}")
             Publisher.sendMessage("Close Progress bar")
         finally:
             Publisher.sendMessage("Close Progress bar")
