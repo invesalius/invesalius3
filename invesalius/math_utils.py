@@ -49,14 +49,9 @@ def calc_ellipse_area(a: float, b: float) -> float:
 
 def calc_ellipse_circumference(a: float, b: float) -> float:
     """
-    Calculates the area of the ellipse circumference with the given a and b radius using Ramanujan formula
+    Calculates the ellipse circumference with the given a and b radii using Ramanujan's formula.
     """
-    semi_axis_a = a / 2
-    semi_axis_b = b / 2
-    circumference = np.pi * (
-        3.0 * (semi_axis_a + semi_axis_b)
-        - np.sqrt((3.0 * semi_axis_a + semi_axis_b) * (semi_axis_a + 3.0 * semi_axis_b))
-    )
+    circumference = np.pi * (3.0 * (a + b) - np.sqrt((3.0 * a + b) * (a + 3.0 * b)))
     return circumference
 
 
