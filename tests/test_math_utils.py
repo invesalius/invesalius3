@@ -32,8 +32,13 @@ def test_calc_ellipse_area():
 
 
 def test_calc_ellipse_circumference():
-    assert isclose(calc_ellipse_circumference(4, 4), 12.5664, rel_tol=1e-4)
-    assert isclose(calc_ellipse_circumference(10, 5), 24.221, rel_tol=1e-4)
+    assert isclose(calc_ellipse_circumference(4, 4), 25.1327, rel_tol=1e-4)
+    assert isclose(calc_ellipse_circumference(10, 5), 48.4422, rel_tol=1e-4)
+    assert isclose(
+        calc_ellipse_circumference(5, 10),
+        calc_ellipse_circumference(10, 5),
+        rel_tol=1e-12,
+    )
 
 
 def test_calc_polygon_area():
